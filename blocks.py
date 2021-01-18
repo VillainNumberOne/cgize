@@ -40,12 +40,11 @@ class ConvLayer(nn.Module):
         else:
             self.name = 'conv'
 
-        self.blocks = [
+        self.Sequential = nn.Sequential(*[
             ConvBlock(i_c, o_c, kernel_size, stride=stride, padding=padding, Deconv=Deconv, lrelu=lrelu, bias=bias) if i==0
             else ConvBlock(o_c, o_c, kernel_size=(3,3), padding=1, Deconv=Deconv, lrelu=lrelu, bias=bias)
             for i in range(N)
-        ]
-        self.Sequential = nn.Sequential(*self.blocks)
+        ])
         
     def forward(self, x_b):
         return self.Sequential(x_b)
