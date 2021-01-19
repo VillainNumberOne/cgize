@@ -60,4 +60,15 @@ class ToImage(nn.Module):
 
     def forward(self, x_b):
         return self.Sequential(x_b)
+
+class FromImage(nn.Module):
+    def __init__(self, im_ch, c_in):
+        super().__init__()
+            
+        self.Sequential = nn.Sequential(
+            nn.Conv2d(im_ch, c_in, 1, 1, 0)
+        )
+
+    def forward(self, x_b):
+        return self.Sequential(x_b)
     

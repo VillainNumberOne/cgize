@@ -46,11 +46,37 @@ class GProperties:
         max. progress value: {self.p_min} (max. resolution = [{2**self.p_max} x {2**self.p_max}])
         middle section channel progression: {self.ch_pr.__str__()}
         """
+
+class DProperties:
+    def __init__(self):
+        self.ch_image = 1
+        self.ch_out = 512
+        self.ch_in = 16
+        self.latent_size = None
+
+        self.p_min = 2
+        self.p_max = 10
+
+        self.ch_pr = [min(self.ch_in * 2 ** i, self.ch_out) for i in range(self.p_max - self.p_min)]
+
+    def __str__(self):
+        return f""" #========= DISCRIMINATOR =========#
+        image channels: {self.ch_image}
+        middle section input channels: {self.ch_in}
+        middle section output channels: {self.ch_out}
+        min. progress value: {self.p_min} (min. resolution = [{2**self.p_min} x {2**self.p_min}])
+        max. progress value: {self.p_min} (max. resolution = [{2**self.p_max} x {2**self.p_max}])
+        middle section channel progression: {self.ch_pr.__str__()}
+        """
     
 
 class Properties:
     def __init__(self):
         self.G = GProperties()
+        self.D = DProperties()
 
-# G = GProperties()
-# print(G)
+    def __str__(self):
+        return self.G.__str__() + "\n" + self.D.__str__()
+
+# P = Properties()
+# print(P)
