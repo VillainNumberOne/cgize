@@ -48,3 +48,16 @@ class ConvLayer(nn.Module):
         
     def forward(self, x_b):
         return self.Sequential(x_b)
+
+
+class ToImage(nn.Module):
+    def __init__(self, c_in, im_ch):
+        super().__init__()
+            
+        self.Sequential = nn.Sequential(
+            nn.ConvTranspose2d(c_in, im_ch, 1, 1, 0)
+        )
+
+    def forward(self, x_b):
+        return self.Sequential(x_b)
+    
