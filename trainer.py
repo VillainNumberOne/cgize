@@ -99,7 +99,6 @@ class PGAN:
         return G_loss, fake_images
 
     def fit(self, epochs):
-        pgan_demo = PGAN_Demo()
         d_losses, g_losses, real_scores, fake_scores = [], [], [], []
 
         for epoch in range(epochs):
