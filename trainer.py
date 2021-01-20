@@ -38,8 +38,12 @@ class PGAN:
         self.G = Generator(self.P.G)
         self.D = Discriminator(self.P.D)
 
+        self.G.to(self.P.device)
+        self.D.to(self.P.device)
+
         self.G_opt = torch.optim.Adam(self.G.parameters(), lr=self.P.G.lr)
         self.D_opt = torch.optim.Adam(self.D.parameters(), lr=self.P.D.lr)
+
 
 
     def initialize_data(self, data_loader):
@@ -99,6 +103,7 @@ class PGAN:
                 
                 D_loss, real_score, fake_score = self.train_D(images)
                 G_loss, fake_images = self.train_G()
+                print(i)
 
             print(
                 f"""#============================================================#
@@ -108,3 +113,10 @@ class PGAN:
                 #============================================================#
                 """
             )
+
+P = Properties()
+# P.device = torch.device('cpu')
+DL = mnist_get_data(P.device, 1)
+
+pgan = PGAN(P, DL)
+pgan.fit(1)
