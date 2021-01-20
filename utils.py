@@ -37,6 +37,9 @@ def upsample(batch, factor):
 def downsample(batch, factor):
     return nn.AvgPool2d(factor)(batch)
 
+def denorm(x):
+    out = (x + 1) / 2
+    return out.clamp(0, 1)
 
 class DeviceDataLoader():
     def __init__(self, dl, device):
@@ -51,13 +54,13 @@ class DeviceDataLoader():
     def __len__(self):
         return len(self.DataLoader)
 
-def mnist_get_data(device, batch_size):
+def mnist_get_data(device, batch_size, N=1000):
     mnist = MNIST(root='data', 
                 train=True, 
                 download=True,
                 transform=Compose([Pad(2), ToTensor(), Normalize(mean=(0.5,), std=(0.5,))]))
 
-    mnist, _ = torch.utils.data.random_split(mnist, [100, len(mnist)-100])
+    mnist, _ = torch.utils.data.random_split(mnist, [N, len(mnist)-N])
     data_loader = DeviceDataLoader(DataLoader(mnist, batch_size, shuffle=True, drop_last=True), device)
 
     return data_loader
@@ -73,9 +76,11 @@ class GProperties:
         self.p_min = 2
         self.p_max = 5
 
-        self.ch_pr = [min(self.ch_out * 2 ** i, self.ch_in) for i in range(self.p_max - self.p_min)][::-1]
-
         self.lr = 1e-5
+
+    @property
+    def ch_pr(self):
+        return [min(self.ch_out * 2 ** i, self.ch_in) for i in range(self.p_max - self.p_min)][::-1]
 
     def __str__(self):
         return f""" #=========== GENERATOR ===========#
@@ -98,9 +103,11 @@ class DProperties:
         self.p_min = 2
         self.p_max = 5
 
-        self.ch_pr = [min(self.ch_in * 2 ** i, self.ch_out) for i in range(self.p_max - self.p_min)]
-
         self.lr = 1e-5
+
+    @property
+    def ch_pr(self):
+        return [min(self.ch_in * 2 ** i, self.ch_out) for i in range(self.p_max - self.p_min)]
 
     def __str__(self):
         return f""" #========= DISCRIMINATOR =========#

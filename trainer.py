@@ -15,11 +15,18 @@ import torchvision.transforms as tt
 from torchvision.utils import save_image
 from torchvision.datasets.utils import download_url
 
+# from demo import *
+# from custom import *
+# from utils import *
+# from net import *
+
 try: 
+    from demo import *
     from custom import *
     from utils import *
     from net import *
 except Exception:
+    from cgize.demo import *
     from cgize.custom import *
     from cgize.utils import *
     from cgize.net import *
@@ -32,7 +39,6 @@ class PGAN:
         
 
     def initialize_network(self, properties):
-        
         self.P = properties
 
         self.G = Generator(self.P.G)
@@ -43,8 +49,6 @@ class PGAN:
 
         self.G_opt = torch.optim.Adam(self.G.parameters(), lr=self.P.G.lr)
         self.D_opt = torch.optim.Adam(self.D.parameters(), lr=self.P.D.lr)
-
-
 
     def initialize_data(self, data_loader):
         self.DL = data_loader
@@ -95,6 +99,7 @@ class PGAN:
         return G_loss, fake_images
 
     def fit(self, epochs):
+        pgan_demo = PGAN_Demo()
         d_losses, g_losses, real_scores, fake_scores = [], [], [], []
 
         for epoch in range(epochs):
@@ -105,18 +110,24 @@ class PGAN:
                 G_loss, fake_images = self.train_G()
                 print(i)
 
-            print(
-                f"""#============================================================#
-                Epoch {epoch}:
-                Discriminator loss: {D_loss}; Real score: {real_score}; Fake score{fake_score};
-                Generator loss: {G_loss}
-                #============================================================#
-                """
-            )
+            # pgan_demo.refresh(epoch)
 
-P = Properties()
-# P.device = torch.device('cpu')
-DL = mnist_get_data(P.device, 1)
+            print(f"""Epoch {epoch}:
+            Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score{fake_score.mean().item()};
+            Generator loss: {G_loss}""")
 
-pgan = PGAN(P, DL)
-pgan.fit(1)
+            self.demo()
+
+    def demo(self, size=6):
+        with torch.no_grad():
+            latent = torch.randn(size**2, self.P.G.ch_in, 1, 1).to(self.P.device)
+            images = self.G(latent).clone().detach()
+            images = images.reshape(images.size(0), self.P.G.ch_image, 2**self.P.G.p_max, 2**self.P.G.p_max)
+            
+            directory = 'images'
+                
+            images = denorm(images)
+            save_image(images, os.path.join(directory, 'demo.png'), nrow=size)
+            
+
+
