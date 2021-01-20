@@ -1,19 +1,10 @@
 import numpy as np
 from collections import OrderedDict
 import math
-import os
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader,  Dataset
 import torch.nn.functional as F
-
-import torchvision
-from torchvision.transforms import ToTensor, Normalize, Compose, Pad
-from torchvision.datasets import MNIST
-import torchvision.transforms as tt
-from torchvision.utils import save_image
-from torchvision.datasets.utils import download_url
 
 from blocks import *
 from utils import *
@@ -22,7 +13,7 @@ class Generator(nn.Module):
     def __init__(self, properties):
         super(Generator, self).__init__()
         # initialize parameters
-        self.P = GProperties()
+        self.P = properties
 
         # initialize network
         self.layers = []
@@ -65,7 +56,7 @@ class Discriminator(nn.Module):
     def __init__(self, properties):
         super(Discriminator, self).__init__()
         # initialize parameters
-        self.P = DProperties()
+        self.P = properties
 
         # initialize network
         self.layers = []
@@ -106,22 +97,23 @@ class Discriminator(nn.Module):
 
 
 
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+P = Properties()
 
-device = torch.device('cpu')
+# device = torch.device('cpu')
 
-D = Discriminator(None)
+D = Discriminator(P.D)
 print(sum(p.numel() for p in D.parameters() if p.requires_grad))
-# to_device(D, device)
-# t = torch.randn(1, 1, 1024, 1024).to(device)
+to_device(D, device)
+t = torch.randn(1, 1, 32, 32).to(device)
 
-# print(D(t).shape)
+print(D(t).shape)
 
-G = Generator(None)
+G = Generator(P.G)
 print(sum(p.numel() for p in G.parameters() if p.requires_grad))
-# to_device(G, device)
-# t = torch.randn(1, 512, 1, 1).to(device)
+to_device(G, device)
+t = torch.randn(1, 512, 1, 1).to(device)
 
-# print(G(t).shape)
+print(G(t).shape)
 
 
