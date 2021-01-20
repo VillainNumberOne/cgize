@@ -123,7 +123,7 @@ class PGAN:
             images = self.G(latent).clone().detach()
             images = images.reshape(images.size(0), self.P.G.ch_image, 2**self.P.G.p_max, 2**self.P.G.p_max)
             
-            directory = 'images'
+            directory = 'cgize/images'
                 
             images = denorm(images)
             save_image(images, os.path.join(directory, 'demo.png'), nrow=size)
