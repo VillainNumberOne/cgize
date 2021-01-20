@@ -77,7 +77,11 @@ class Discriminator(nn.Module):
         # last section 
         self.layers.extend([ 
             ConvBlock(self.P.ch_out, self.P.ch_out, 3, 1, 1, False), 
-            nn.Conv2d(self.P.ch_out, self.P.ch_out, 2**self.P.p_min, 1, 0)
+            nn.Conv2d(self.P.ch_out, self.P.ch_out, 2**self.P.p_min, 1, 0),
+            
+            nn.Flatten(),
+            nn.Linear(self.P.ch_out, 1),
+            nn.Sigmoid()
         ])
 
         self.Sequential = nn.Sequential(*self.layers)
@@ -97,23 +101,23 @@ class Discriminator(nn.Module):
 
 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-P = Properties()
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# P = Properties()
 
-# device = torch.device('cpu')
+# # device = torch.device('cpu')
 
-D = Discriminator(P.D)
-print(sum(p.numel() for p in D.parameters() if p.requires_grad))
-to_device(D, device)
-t = torch.randn(1, 1, 32, 32).to(device)
+# D = Discriminator(P.D)
+# print(sum(p.numel() for p in D.parameters() if p.requires_grad))
+# to_device(D, device)
+# t = torch.randn(1, 1, 32, 32).to(device)
 
-print(D(t).shape)
+# print(D(t).shape)
 
-G = Generator(P.G)
-print(sum(p.numel() for p in G.parameters() if p.requires_grad))
-to_device(G, device)
-t = torch.randn(1, 512, 1, 1).to(device)
+# G = Generator(P.G)
+# print(sum(p.numel() for p in G.parameters() if p.requires_grad))
+# to_device(G, device)
+# t = torch.randn(1, 512, 1, 1).to(device)
 
-print(G(t).shape)
+# print(G(t).shape)
 
 

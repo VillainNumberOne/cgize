@@ -27,16 +27,17 @@ class PGAN:
         
 
     def initialize_network(self, properties):
+        
         self.P = properties
 
         self.G = Generator(self.P.G)
         self.D = Discriminator(self.P.D)
 
-        self.G_opt = opt(self.G.parameters(), lr=self.P.G.lr)
-        self.D_opt = opt(self.D.parameters(), lr=self.P.D.lr)
+        self.G_opt = torch.optim.Adam(self.G.parameters(), lr=self.P.G.lr)
+        self.D_opt = torch.optim.Adam(self.D.parameters(), lr=self.P.D.lr)
 
 
-    def initialize_data(data_loader):
+    def initialize_data(self, data_loader):
         self.DL = data_loader
         self.batch_size = self.DL.batch_size
         self.batches_number = len(self.DL)
@@ -46,8 +47,8 @@ class PGAN:
         self.D_opt.zero_grad()
 
     def train_D(self, batch):
-        real_labels = torch.ones(len(batch), 1).to(self.DEVICE)
-        fake_labels = torch.zeros(len(batch), 1).to(self.DEVICE)
+        real_labels = torch.ones(len(batch), 1).to(self.P.device)
+        fake_labels = torch.zeros(len(batch), 1).to(self.P.device)
 
         # Loss for real images
         outputs = self.D(batch)
@@ -55,7 +56,7 @@ class PGAN:
         real_score = outputs
 
         # Loss for fake images
-        z = torch.randn(len(batch), self.P.latent, 1, 1).to(self.DEVICE)
+        z = torch.randn(len(batch), self.P.latent, 1, 1).to(self.P.device)
         fake_images = self.G(z)
         outputs = self.D(fake_images)
         D_loss_fake = self.P.loss(outputs, fake_labels)
@@ -71,11 +72,11 @@ class PGAN:
 
     def train_G(self):
         # Generate fake images and calculate loss
-        z = torch.randn(self.batch_size, self.P.latent, 1, 1).to(self.DEVICE)
+        z = torch.randn(self.batch_size, self.P.latent, 1, 1).to(self.P.device)
         fake_images = self.G(z)
 
-        labels = torch.ones(self.batch_size, 1).to(self.DEVICE)
-        G_loss = self.loss(self.D(fake_images), labels)
+        labels = torch.ones(self.batch_size, 1).to(self.P.device)
+        G_loss = self.P.loss(self.D(fake_images), labels)
 
         # Backprop and optimize
         self.reset_grad()
@@ -88,11 +89,11 @@ class PGAN:
         d_losses, g_losses, real_scores, fake_scores = [], [], [], []
 
         for epoch in range(epochs):
-            for i, (images, _) in enumerate(self.data_loader):
-                images = images.to(self.DEVICE)
+            for i, (images, _) in enumerate(self.DL):
+                images = images.to(self.P.device)
                 
-                D_loss, real_score, fake_score = self.train_discriminator(images)
-                G_loss, fake_images = self.train_generator()
+                D_loss, real_score, fake_score = self.train_D(images)
+                G_loss, fake_images = self.train_G()
 
             print(
                 f"""#============================================================#
@@ -102,3 +103,4 @@ class PGAN:
                 #============================================================#
                 """
             )
+
