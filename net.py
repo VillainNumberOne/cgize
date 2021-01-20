@@ -9,7 +9,7 @@ import torch.nn.functional as F
 try: 
     from custom import *
     from utils import *
-except Exception ex:
+except Exception:
     from cgize.custom import *
     from cgize.utils import *
 

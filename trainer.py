@@ -19,7 +19,7 @@ try:
     from custom import *
     from utils import *
     from net import *
-except Exception ex:
+except Exception:
     from cgize.custom import *
     from cgize.utils import *
     from cgize.net import *
