@@ -6,8 +6,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from custom import *
-from utils import *
+try: 
+    from custom import *
+    from utils import *
+except Exception ex:
+    from cgize.custom import *
+    from cgize.utils import *
 
 class Generator(nn.Module):
     def __init__(self, properties):

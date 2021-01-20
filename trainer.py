@@ -15,9 +15,14 @@ import torchvision.transforms as tt
 from torchvision.utils import save_image
 from torchvision.datasets.utils import download_url
 
-from custom import *
-from utils import *
-from net import *
+try: 
+    from custom import *
+    from utils import *
+    from net import *
+except Exception ex:
+    from cgize.custom import *
+    from cgize.utils import *
+    from cgize.net import *
 
 
 class PGAN:
