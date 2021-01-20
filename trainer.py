@@ -15,7 +15,7 @@ import torchvision.transforms as tt
 from torchvision.utils import save_image
 from torchvision.datasets.utils import download_url
 
-from blocks import *
+from custom import *
 from utils import *
 from net import *
 
@@ -103,4 +103,3 @@ class PGAN:
                 #============================================================#
                 """
             )
-

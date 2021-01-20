@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from blocks import *
+from custom import *
 from utils import *
 
 class Generator(nn.Module):
@@ -78,7 +78,7 @@ class Discriminator(nn.Module):
         self.layers.extend([ 
             ConvBlock(self.P.ch_out, self.P.ch_out, 3, 1, 1, False), 
             nn.Conv2d(self.P.ch_out, self.P.ch_out, 2**self.P.p_min, 1, 0),
-            
+
             nn.Flatten(),
             nn.Linear(self.P.ch_out, 1),
             nn.Sigmoid()
