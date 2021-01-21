@@ -126,7 +126,8 @@ class Properties:
         self.G = GProperties()
         self.D = DProperties()
 
-        self.loss = nn.BCELoss()
+        # self.loss = nn.BCELoss()
+        self.loss = nn.MSELoss()
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.latent = self.D.ch_out

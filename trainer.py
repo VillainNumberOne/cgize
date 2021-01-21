@@ -64,8 +64,7 @@ class PGAN:
         fake_score = outputs
 
         # Backprop and optimize
-        # D_loss = D_loss_real + D_loss_fake
-        D_loss = D_loss_real - D_loss_fake
+        D_loss = D_loss_real + D_loss_fake
         
         self.reset_grad()
         D_loss.backward()
