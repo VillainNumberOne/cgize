@@ -13,17 +13,24 @@ class ConvBlock(nn.Module):
         if Deconv:
             self.layer = nn.ConvTranspose2d
             self.relu = nn.LeakyReLU(lrelu)
+            nl = 'leaky_relu'
         else:
             self.layer = nn.Conv2d
             self.relu = nn.ReLU()
+            nl = 'relu'
             
         self.activation = nn.Sequential(
             nn.BatchNorm2d(o_c),
             self.relu
         )
+
+        #weight initialization
+        self.layer = self.layer(i_c, o_c, kernel_size, stride=stride, padding=padding, bias=bias)
+        nn.init.kaiming_normal_(self.layer.weight, nonlinearity=nl)
+        
         
         self.Sequential = nn.Sequential(
-            self.layer(i_c, o_c, kernel_size, stride=stride, padding=padding, bias=bias),
+            self.layer,
             self.activation
         )
         
