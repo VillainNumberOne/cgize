@@ -35,8 +35,8 @@ class PGAN:
         self.G.to(self.P.device)
         self.D.to(self.P.device)
 
-        self.G_opt = torch.optim.Adam(self.G.parameters(), lr=self.P.G.lr)
-        self.D_opt = torch.optim.Adam(self.D.parameters(), lr=self.P.D.lr)
+        self.G_opt = torch.optim.RMSprop(self.G.parameters(), lr=self.P.G.lr, momentum=5e-5)
+        self.D_opt = torch.optim.RMSprop(self.D.parameters(), lr=self.P.D.lr, momentum=5e-5)
 
     def initialize_data(self, data_loader):
         self.DL = data_loader
@@ -64,7 +64,9 @@ class PGAN:
         fake_score = outputs
 
         # Backprop and optimize
-        D_loss = D_loss_real + D_loss_fake
+        # D_loss = D_loss_real + D_loss_fake
+        D_loss = D_loss_real - D_loss_fake
+        
         self.reset_grad()
         D_loss.backward()
         self.D_opt.step()
