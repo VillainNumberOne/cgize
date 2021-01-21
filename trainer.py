@@ -96,7 +96,7 @@ class PGAN:
                 
                 D_loss, real_score, fake_score = self.train_D(images)
                 G_loss, fake_images = self.train_G()
-                print(i)
+                # print(i)
 
             # pgan_demo.refresh(epoch)
 
@@ -117,10 +117,10 @@ class PGAN:
             images = denorm(images)
             save_image(images, os.path.join(directory, 'demo.png'), nrow=size)
             
-P = Properties()
-# P.D.lr = 5e-7
-DL = mnist_get_data(P.device, 100)
+# P = Properties()
+# # P.D.lr = 5e-7
+# DL = mnist_get_data(P.device, 100)
 
-pgan = PGAN(P, DL)
-pgan.fit(10)
+# pgan = PGAN(P, DL)
+# pgan.fit(10)
 
