@@ -20,18 +20,19 @@ class Generator(nn.Module):
         # first section
         self.layers.extend([ 
             ConvBlock(self.P.ch_in, self.P.ch_in, 2**self.P.p_min, 1, 0), 
-            ConvBlock(self.P.ch_in, self.P.ch_in, 3, 1, 1)
+            ConvBlock(self.P.ch_in, self.P.ch_in, 4, 2, 1)
         ])
 
         # middle section 
         for i in range(len(self.P.ch_pr)):
             self.layers.extend([
-                nn.Upsample(scale_factor=2, mode='nearest'),
+                # nn.Upsample(scale_factor=2, mode='nearest'),
 
                 ConvBlock(self.P.ch_in, self.P.ch_pr[i], 3, 1, 1) if i == 0 else \
                 ConvBlock(self.P.ch_pr[i-1], self.P.ch_pr[i], 3, 1, 1), 
 
-                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i], 3, 1, 1) 
+                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i], 4, 2, 1) if i < len(self.P.ch_pr) - 1 else \
+                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i], 3, 1, 1)
             ])
 
         # last section 
@@ -68,10 +69,10 @@ class Discriminator(nn.Module):
             self.layers.extend([
                 ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i], 3, 1, 1, False), 
 
-                ConvBlock(self.P.ch_pr[i], self.P.ch_out, 3, 1, 1, False) if i == len(self.P.ch_pr)-1 else \
-                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i+1], 3, 1, 1, False),
+                ConvBlock(self.P.ch_pr[i], self.P.ch_out, 4, 2, 1, False) if i == len(self.P.ch_pr)-1 else \
+                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i+1], 4, 2, 1, False),
 
-                nn.MaxPool2d(2)
+                # nn.MaxPool2d(2)
             ])
 
         # last section 
@@ -109,7 +110,7 @@ class Discriminator(nn.Module):
 # D = Discriminator(P.D)
 # print(sum(p.numel() for p in D.parameters() if p.requires_grad))
 # to_device(D, device)
-# t = torch.randn(1, 1, 32, 32).to(device)
+# t = torch.randn(100, 1, 32, 32).to(device)
 
 # print(D(t).shape)
 
@@ -120,4 +121,4 @@ class Discriminator(nn.Module):
 
 # print(G(t).shape)
 
-
+# print(ConvBlock(32, 32, 4, 2, 1, Deconv=False)(torch.randn(1,32,16,16)).shape)
