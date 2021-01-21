@@ -15,22 +15,10 @@ import torchvision.transforms as tt
 from torchvision.utils import save_image
 from torchvision.datasets.utils import download_url
 
-# from demo import *
-# from custom import *
-# from utils import *
-# from net import *
-
-try: 
-    from demo import *
-    from custom import *
-    from utils import *
-    from net import *
-except Exception:
-    from cgize.demo import *
-    from cgize.custom import *
-    from cgize.utils import *
-    from cgize.net import *
-
+from demo import *
+from custom import *
+from utils import *
+from net import *
 
 class PGAN:
     def __init__(self, properties, data_loader):
