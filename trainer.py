@@ -48,7 +48,7 @@ class PGAN:
         self.D_opt.zero_grad()
 
     def train_D(self, batch):
-        real_labels = torch.ones(len(batch), 1).to(self.P.device)
+        real_labels = torch.empty(len(batch), 1).fill_(.9).to(self.P.device)
         fake_labels = torch.zeros(len(batch), 1).to(self.P.device)
 
         # Loss for real images
@@ -117,10 +117,10 @@ class PGAN:
             images = denorm(images)
             save_image(images, os.path.join(directory, 'demo.png'), nrow=size)
             
-# P = Properties()
-# # P.D.lr = 5e-7
-# DL = mnist_get_data(P.device, 100)
+P = Properties()
+# P.D.lr = 5e-7
+DL = mnist_get_data(P.device, 100)
 
-# pgan = PGAN(P, DL)
-# pgan.fit(10)
+pgan = PGAN(P, DL)
+pgan.fit(10)
 

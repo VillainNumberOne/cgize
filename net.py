@@ -20,18 +20,17 @@ class Generator(nn.Module):
         # first section
         self.layers.extend([ 
             ConvBlock(self.P.ch_in, self.P.ch_in, 2**self.P.p_min, 1, 0), 
-            ConvBlock(self.P.ch_in, self.P.ch_in, 4, 2, 1)
+            ConvBlock(self.P.ch_in, self.P.ch_in, 3, 1, 1)
         ])
 
         # middle section 
         for i in range(len(self.P.ch_pr)):
             self.layers.extend([
-                # nn.Upsample(scale_factor=2, mode='nearest'),
+                nn.Upsample(scale_factor=2, mode='nearest'),
 
                 ConvBlock(self.P.ch_in, self.P.ch_pr[i], 3, 1, 1) if i == 0 else \
                 ConvBlock(self.P.ch_pr[i-1], self.P.ch_pr[i], 3, 1, 1), 
 
-                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i], 4, 2, 1) if i < len(self.P.ch_pr) - 1 else \
                 ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i], 3, 1, 1)
             ])
 
@@ -69,20 +68,20 @@ class Discriminator(nn.Module):
             self.layers.extend([
                 ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i], 3, 1, 1, False), 
 
-                ConvBlock(self.P.ch_pr[i], self.P.ch_out, 4, 2, 1, False) if i == len(self.P.ch_pr)-1 else \
-                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i+1], 4, 2, 1, False),
+                ConvBlock(self.P.ch_pr[i], self.P.ch_out, 3, 1, 1, False) if i == len(self.P.ch_pr)-1 else \
+                ConvBlock(self.P.ch_pr[i], self.P.ch_pr[i+1], 3, 1, 1, False),
 
-                # nn.MaxPool2d(2)
+                nn.MaxPool2d(2)
             ])
 
         # last section 
         self.layers.extend([ 
-            ConvBlock(self.P.ch_out, self.P.ch_out, 3, 1, 1, False), 
+            Minibatch(),
+            ConvBlock(self.P.ch_out+1, self.P.ch_out, 3, 1, 1, False), 
             nn.Conv2d(self.P.ch_out, self.P.ch_out, 2**self.P.p_min, 1, 0),
 
             nn.Flatten(),   
-            nn.Linear(self.P.ch_out, 1),
-            nn.Sigmoid()
+            nn.Linear(self.P.ch_out, 1)
         ])
 
         self.Sequential = nn.Sequential(*self.layers)

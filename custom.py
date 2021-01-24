@@ -2,8 +2,10 @@ import numpy as np
 from collections import OrderedDict
 import math
 import os
+import copy
 
 import torch.nn as nn
+import torch
 
 
 
@@ -78,4 +80,22 @@ class FromImage(nn.Module):
 
     def forward(self, x_b):
         return self.Sequential(x_b)
+
+class Minibatch(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.adjusted_std = lambda x, **kwargs: torch.sqrt(torch.mean((x - torch.mean(x, **kwargs)) ** 2, **kwargs) + 1e-8)  
+
+    def forward(self, x_b):
+        shape = list(x_b.size())
+        target_shape = copy.deepcopy(shape)
+        target_shape[1] = 1
+
+        vals = self.adjusted_std(x_b, dim=0, keepdim=True)
+
+        vals = torch.mean(vals, dim=1, keepdim=True)
+        vals = vals.expand(*target_shape)
+
+        return torch.cat([x_b, vals], 1)
     
