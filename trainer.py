@@ -2,6 +2,9 @@ import numpy as np
 from collections import OrderedDict
 import math
 import os
+try:    from IPython.display import clear_output
+except Exception:   ipython = False
+else:   ipython = True
 
 import torch
 import torch.nn as nn
@@ -99,7 +102,7 @@ class PGAN:
                 # print(i)
 
             # pgan_demo.refresh(epoch)
-
+            if ipython: clear_output()
             print(f"""Epoch {epoch}:
             Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score{fake_score.mean().item()};
             Generator loss: {G_loss}""")

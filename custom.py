@@ -22,8 +22,8 @@ class ConvBlock(nn.Module):
             nl = 'relu'
             
         self.activation = nn.Sequential(
-            nn.BatchNorm2d(o_c),
-            self.relu
+            self.relu,
+            nn.BatchNorm2d(o_c)
         )
 
         #weight initialization
@@ -31,12 +31,11 @@ class ConvBlock(nn.Module):
         nn.init.kaiming_normal_(self.layer.weight, nonlinearity=nl)
         
         
-        self.Sequential = nn.Sequential(
-            self.layer,
-            self.activation
-        )
+        # self.Sequential = nn.Sequential(
+        #     self.layer,
+        #     self.activation
+        # )
 
-        conv_w = self.layer.weight.data.clone()
         self.scale = (torch.mean(self.layer.weight.data ** 2)) ** 0.5
         self.layer.weight.data.copy_(self.layer.weight.data/self.scale)
 
