@@ -35,10 +35,18 @@ class ConvBlock(nn.Module):
             self.layer,
             self.activation
         )
+
+        conv_w = self.layer.weight.data.clone()
+        self.scale = (torch.mean(self.layer.weight.data ** 2)) ** 0.5
+        self.layer.weight.data.copy_(self.layer.weight.data/self.scale)
+
+    def forward(self, x):
+        x = self.layer(x.mul(self.scale))
+        return self.activation(x)
         
         
-    def forward(self, x_b):
-        return self.Sequential(x_b)
+    # def forward(self, x_b):
+    #     return self.Sequential(x_b)
     
 class ConvLayer(nn.Module):
     def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=True, N=1):
