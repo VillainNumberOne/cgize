@@ -62,6 +62,9 @@ class DCGAN:
         self.D_opt = torch.optim.Adam(self.D.parameters(), lr=self.P.lr, betas=(0.5, 0.999))
         self.criterion = nn.BCELoss()
 
+        self.G.train()
+        self.D.train()
+
     def initialize_data(self, data_loader):
         self.DL = data_loader
         self.batch_size = self.DL.batch_size
