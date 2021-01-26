@@ -97,7 +97,9 @@ class PGAN:
             for i, (images, _) in enumerate(self.DL):
                 images = images.to(self.P.device)
                 
-                D_loss, real_score, fake_score = self.train_D(images)
+                for i in range(5):
+                    D_loss, real_score, fake_score = self.train_D(images)
+                    
                 G_loss, fake_images = self.train_G()
                 # print(i)
 
