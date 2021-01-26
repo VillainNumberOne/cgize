@@ -82,6 +82,7 @@ class Discriminator(nn.Module):
 
             nn.Flatten(),   
             nn.Linear(self.P.ch_out, 1)
+            nn.Sigmoid()
         ])
 
         self.Sequential = nn.Sequential(*self.layers)
