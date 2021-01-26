@@ -36,9 +36,7 @@ class ConvBlock(nn.Module):
         #     self.activation
         # )
 
-        conv_w = self.layer.weight.data.clone()
         self.scale = (torch.mean(self.layer.weight.data ** 2)) ** 0.5
-        self.layer.weight.data.copy_(self.layer.weight.data/self.scale)
 
     def forward(self, x):
         x = self.layer(x.mul(self.scale))
