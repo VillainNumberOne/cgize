@@ -10,7 +10,7 @@ import torch
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=True):
+    def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=False):
         super().__init__()
         if Deconv:
             self.layer = nn.ConvTranspose2d
@@ -37,12 +37,11 @@ class ConvBlock(nn.Module):
         # )
 
         conv_w = self.layer.weight.data.clone()
-        self.bias = torch.nn.Parameter(torch.FloatTensor(o_c).fill_(0))
         self.scale = (torch.mean(self.layer.weight.data ** 2)) ** 0.5
         self.layer.weight.data.copy_(self.layer.weight.data/self.scale)
 
     def forward(self, x):
-        x = self.layer(x.mul(self.scale)) + self.bias.view(1,-1,1,1).expand_as(x)
+        x = self.layer(x.mul(self.scale))
         return self.activation(x)
         
         
