@@ -77,7 +77,7 @@ def mnist_get_data(device, batch_size, N=1000):
     mnist = MNIST(root='data', 
                 train=True, 
                 download=True,
-                transform=Compose([Pad(2), ToTensor(), AddGaussianNoise(0., 1.)]))
+                transform=Compose([Pad(2), ToTensor()]))
 
     mnist, _ = torch.utils.data.random_split(mnist, [N, len(mnist)-N])  
     data_loader = DeviceDataLoader(DataLoader(mnist, batch_size, shuffle=True, drop_last=True), device)
