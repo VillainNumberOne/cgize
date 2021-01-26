@@ -52,6 +52,9 @@ class DCGAN:
         self.G = Generator(self.P.p_min, self.P.p_max, self.P.z_size, self.P.ch_img, self.P.g_ch_in)
         self.D = Discriminator(self.P.p_min, self.P.p_max, self.P.ch_img, self.P.d_ch_in)
 
+        initialize_weights(self.G)
+        initialize_weights(self.D)
+
         self.G.to(self.P.device)
         self.D.to(self.P.device)
 
