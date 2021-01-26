@@ -51,7 +51,7 @@ class PGAN:
         self.D_opt.zero_grad()
 
     def train_D(self, batch):
-        real_labels = torch.empty(len(batch), 1).fill_(.9).to(self.P.device)
+        real_labels = torch.empty(len(batch), 1).fill_(1).to(self.P.device)
         fake_labels = torch.zeros(len(batch), 1).to(self.P.device)
 
         # Loss for real images
@@ -97,16 +97,16 @@ class PGAN:
             for i, (images, _) in enumerate(self.DL):
                 images = images.to(self.P.device)
                 
-                for i in range(5):
+                for i in range(1):
                     D_loss, real_score, fake_score = self.train_D(images)
-                    
+
                 G_loss, fake_images = self.train_G()
                 # print(i)
 
             # pgan_demo.refresh(epoch)
             if ipython: clear_output()
             print(f"""Epoch {epoch}:
-            Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score{fake_score.mean().item()};
+            Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score: {fake_score.mean().item()};
             Generator loss: {G_loss}""")
 
             self.demo()
