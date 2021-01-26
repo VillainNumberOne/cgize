@@ -81,7 +81,7 @@ class Discriminator(nn.Module):
             nn.Conv2d(self.P.ch_out, self.P.ch_out, 2**self.P.p_min, 1, 0),
 
             nn.Flatten(),   
-            nn.Linear(self.P.ch_out, 1)
+            nn.Linear(self.P.ch_out, 1),
             nn.Sigmoid()
         ])
 
