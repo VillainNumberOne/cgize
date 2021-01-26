@@ -69,7 +69,7 @@ class PGAN:
         # Backprop and optimize
         D_loss = D_loss_real + D_loss_fake
         
-        self.reset_grad()
+        self.D_opt.zero_grad()
         D_loss.backward()
         self.D_opt.step()
 
@@ -84,7 +84,7 @@ class PGAN:
         G_loss = self.P.loss(self.D(fake_images), labels)
 
         # Backprop and optimize
-        self.reset_grad()
+        self.G_opt.zero_grad()
         G_loss.backward()
         self.G_opt.step()
 
@@ -97,9 +97,8 @@ class PGAN:
             for i, (images, _) in enumerate(self.DL):
                 images = images.to(self.P.device)
                 
-                for i in range(1):
-                    D_loss, real_score, fake_score = self.train_D(images)
 
+                D_loss, real_score, fake_score = self.train_D(images)
                 G_loss, fake_images = self.train_G()
                 # print(i)
 
