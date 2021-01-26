@@ -49,6 +49,17 @@ class Noise(object):
     def __call__(self, image):
         return image - torch.randn(image.size()) * self.std + self.mean
 
+class AddGaussianNoise(object):
+    def __init__(self, mean=0., std=1.):
+        self.std = std
+        self.mean = mean
+        
+    def __call__(self, tensor):
+        return tensor + torch.randn(tensor.size()) * self.std + self.mean
+    
+    def __repr__(self):
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+
 class DeviceDataLoader:
     def __init__(self, dl, device):
         self.DataLoader = dl
@@ -66,7 +77,7 @@ def mnist_get_data(device, batch_size, N=1000):
     mnist = MNIST(root='data', 
                 train=True, 
                 download=True,
-                transform=Compose([Pad(2), ToTensor(), Normalize(mean=(0.5,), std=(0.5,))]))
+                transform=Compose([Pad(2), ToTensor(), AddGaussianNoise(0., 1.)]))
 
     mnist, _ = torch.utils.data.random_split(mnist, [N, len(mnist)-N])  
     data_loader = DeviceDataLoader(DataLoader(mnist, batch_size, shuffle=True, drop_last=True), device)
