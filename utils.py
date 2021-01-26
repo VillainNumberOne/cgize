@@ -41,6 +41,7 @@ def denorm(x):
     out = (x + 1) / 2
     return out.clamp(0, 1)
 
+<<<<<<< HEAD
 class Noise(object):
     def __init__(self, mean=0., std=1.):
         self.std = std
@@ -49,7 +50,21 @@ class Noise(object):
     def __call__(self, image):
         return image - torch.randn(image.size()) * self.std + self.mean
 
+class AddGaussianNoise(object):
+    def __init__(self, mean=0., std=1.):
+        self.std = std
+        self.mean = mean
+        
+    def __call__(self, tensor):
+        return tensor + torch.randn(tensor.size()) * self.std + self.mean
+    
+    def __repr__(self):
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+
 class DeviceDataLoader:
+=======
+class DeviceDataLoader():
+>>>>>>> parent of 95bd0f8... Minibatch discrimination
     def __init__(self, dl, device):
         self.DataLoader = dl
         self.device = device
@@ -66,9 +81,9 @@ def mnist_get_data(device, batch_size, N=1000):
     mnist = MNIST(root='data', 
                 train=True, 
                 download=True,
-                transform=Compose([Pad(2), ToTensor(), Normalize(mean=(0.5,), std=(0.5,))]))
+                transform=Compose([Pad(2), ToTensor()]))
 
-    mnist, _ = torch.utils.data.random_split(mnist, [N, len(mnist)-N])  
+    mnist, _ = torch.utils.data.random_split(mnist, [N, len(mnist)-N])
     data_loader = DeviceDataLoader(DataLoader(mnist, batch_size, shuffle=True, drop_last=True), device)
 
     return data_loader
@@ -146,12 +161,5 @@ class Properties:
 # P = Properties()
 # print(P)
 
-dl = mnist_get_data(torch.device('cpu'), 10)
+# dl = mnist_get_data(torch.device('cpu'), 10)
 # print(len(dl), "\n", dl.batch_size)
-# for batch in dl:
-#     # print(batch.shape)
-#     print(batch)
-#     for image, _ in batch:
-#         print(max(image), min(image))
-#         break
-#     break

@@ -2,15 +2,13 @@ import numpy as np
 from collections import OrderedDict
 import math
 import os
-import copy
 
 import torch.nn as nn
-import torch
 
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=True):
+    def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=False):
         super().__init__()
         if Deconv:
             self.layer = nn.ConvTranspose2d
@@ -22,8 +20,8 @@ class ConvBlock(nn.Module):
             nl = 'relu'
             
         self.activation = nn.Sequential(
-            nn.BatchNorm2d(o_c),
-            self.relu
+            self.relu,
+            nn.BatchNorm2d(o_c)
         )
 
         #weight initialization
@@ -31,14 +29,20 @@ class ConvBlock(nn.Module):
         nn.init.kaiming_normal_(self.layer.weight, nonlinearity=nl)
         
         
-        self.Sequential = nn.Sequential(
-            self.layer,
-            self.activation
-        )
+        # self.Sequential = nn.Sequential(
+        #     self.layer,
+        #     self.activation
+        # )
+
+        self.scale = (torch.mean(self.layer.weight.data ** 2)) ** 0.5
+
+    def forward(self, x):
+        x = self.layer(x.mul(self.scale))
+        return self.activation(x)
         
         
-    def forward(self, x_b):
-        return self.Sequential(x_b)
+    # def forward(self, x_b):
+    #     return self.Sequential(x_b)
     
 class ConvLayer(nn.Module):
     def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=True, N=1):
@@ -80,22 +84,4 @@ class FromImage(nn.Module):
 
     def forward(self, x_b):
         return self.Sequential(x_b)
-
-class Minibatch(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.adjusted_std = lambda x, **kwargs: torch.sqrt(torch.mean((x - torch.mean(x, **kwargs)) ** 2, **kwargs) + 1e-8)  
-
-    def forward(self, x_b):
-        shape = list(x_b.size())
-        target_shape = copy.deepcopy(shape)
-        target_shape[1] = 1
-
-        vals = self.adjusted_std(x_b, dim=0, keepdim=True)
-
-        vals = torch.mean(vals, dim=1, keepdim=True)
-        vals = vals.expand(*target_shape)
-
-        return torch.cat([x_b, vals], 1)
     

@@ -2,6 +2,9 @@ import numpy as np
 from collections import OrderedDict
 import math
 import os
+try:    from IPython.display import clear_output
+except Exception:   ipython = False
+else:   ipython = True
 
 import torch
 import torch.nn as nn
@@ -48,7 +51,11 @@ class PGAN:
         self.D_opt.zero_grad()
 
     def train_D(self, batch):
-        real_labels = torch.empty(len(batch), 1).fill_(.9).to(self.P.device)
+<<<<<<< HEAD
+        real_labels = torch.empty(len(batch), 1).fill_(1).to(self.P.device)
+=======
+        real_labels = torch.ones(len(batch), 1).to(self.P.device)
+>>>>>>> parent of 95bd0f8... Minibatch discrimination
         fake_labels = torch.zeros(len(batch), 1).to(self.P.device)
 
         # Loss for real images
@@ -66,7 +73,7 @@ class PGAN:
         # Backprop and optimize
         D_loss = D_loss_real + D_loss_fake
         
-        self.reset_grad()
+        self.D_opt.zero_grad()
         D_loss.backward()
         self.D_opt.step()
 
@@ -81,7 +88,7 @@ class PGAN:
         G_loss = self.P.loss(self.D(fake_images), labels)
 
         # Backprop and optimize
-        self.reset_grad()
+        self.G_opt.zero_grad()
         G_loss.backward()
         self.G_opt.step()
 
@@ -94,14 +101,15 @@ class PGAN:
             for i, (images, _) in enumerate(self.DL):
                 images = images.to(self.P.device)
                 
+
                 D_loss, real_score, fake_score = self.train_D(images)
                 G_loss, fake_images = self.train_G()
                 # print(i)
 
             # pgan_demo.refresh(epoch)
-
+            if ipython: clear_output()
             print(f"""Epoch {epoch}:
-            Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score{fake_score.mean().item()};
+            Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score: {fake_score.mean().item()};
             Generator loss: {G_loss}""")
 
             self.demo()
@@ -117,10 +125,10 @@ class PGAN:
             images = denorm(images)
             save_image(images, os.path.join(directory, 'demo.png'), nrow=size)
             
-P = Properties()
-# P.D.lr = 5e-7
-DL = mnist_get_data(P.device, 100)
+# P = Properties()
+# # P.D.lr = 5e-7
+# DL = mnist_get_data(P.device, 100)
 
-pgan = PGAN(P, DL)
-pgan.fit(10)
+# pgan = PGAN(P, DL)
+# pgan.fit(10)
 
