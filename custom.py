@@ -22,8 +22,8 @@ class ConvBlock(nn.Module):
             nl = 'relu'
             
         self.activation = nn.Sequential(
-            nn.BatchNorm2d(o_c),
-            self.relu
+            self.relu,
+            nn.BatchNorm2d(o_c)
         )
 
         #weight initialization

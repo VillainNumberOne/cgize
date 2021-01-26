@@ -63,10 +63,10 @@ class PGAN:
         D_loss_fake = self.P.loss(outputs, fake_labels)
         fake_score = outputs
 
-        # Backprop and optimize
         D_loss = D_loss_real + D_loss_fake
+        # Backprop and optimize
         
-        self.reset_grad()
+        self.D_opt.zero_grad()
         D_loss.backward()
         self.D_opt.step()
 
@@ -81,7 +81,7 @@ class PGAN:
         G_loss = self.P.loss(self.D(fake_images), labels)
 
         # Backprop and optimize
-        self.reset_grad()
+        self.G_opt.zero_grad()
         G_loss.backward()
         self.G_opt.step()
 
@@ -101,7 +101,7 @@ class PGAN:
             # pgan_demo.refresh(epoch)
 
             print(f"""Epoch {epoch}:
-            Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score{fake_score.mean().item()};
+            Discriminator loss: {D_loss}; Real score: {real_score.mean().item()}; Fake score: {fake_score.mean().item()};
             Generator loss: {G_loss}""")
 
             self.demo()
@@ -117,10 +117,10 @@ class PGAN:
             images = denorm(images)
             save_image(images, os.path.join(directory, 'demo.png'), nrow=size)
             
-P = Properties()
-# P.D.lr = 5e-7
-DL = mnist_get_data(P.device, 100)
+# P = Properties()
+# # P.D.lr = 5e-7
+# DL = mnist_get_data(P.device, 100)
 
-pgan = PGAN(P, DL)
-pgan.fit(10)
+# pgan = PGAN(P, DL)
+# pgan.fit(10)
 
