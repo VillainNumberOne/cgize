@@ -59,8 +59,8 @@ class DCGAN:
         self.G.to(self.P.device)
         self.D.to(self.P.device)
 
-        self.G_opt = torch.optim.RMSprop(self.G.parameters(), lr=self.P.lr)
-        self.D_opt = torch.optim.RMSprop(self.D.parameters(), lr=self.P.lr)
+        self.G_opt = torch.optim.Adam(self.G.parameters(), lr=self.P.lr, betas=(0,0.9))
+        self.D_opt = torch.optim.Adam(self.D.parameters(), lr=self.P.lr, betas=(0,0.9))
         # self.criterion = nn.BCELoss()
 
         self.G.train()
@@ -81,7 +81,7 @@ class DCGAN:
         D_fake = self.D(fake).reshape(-1)
 
         gp = gradient_penalty(self.D, batch, fake, self.P.device)
-        D_loss = -(torch.mean(D_real) - torch.mean(D_fake)) + self.P.lambda_gp * gp
+        D_loss = -(torch.mean(D_real) - torch.mean(D_fake) + self.P.lambda_gp * gp)
             
         self.D_opt.zero_grad()
         D_loss.backward()
