@@ -41,6 +41,27 @@ def denorm(x):
     out = (x + 1) / 2
     return out.clamp(0, 1)
 
+def gradient_penalty(critic, real, fake, device="cpu"):
+    BATCH_SIZE, C, H, W = real.shape
+    alpha = torch.rand((BATCH_SIZE, 1, 1, 1)).repeat(1, C, H, W).to(device)
+    interpolated_images = real * alpha + fake * (1 - alpha)
+
+    # Calculate critic scores
+    mixed_scores = critic(interpolated_images)
+
+    # Take the gradient of the scores with respect to the images
+    gradient = torch.autograd.grad(
+        inputs=interpolated_images,
+        outputs=mixed_scores,
+        grad_outputs=torch.ones_like(mixed_scores),
+        create_graph=True,
+        retain_graph=True,
+    )[0]
+    gradient = gradient.view(gradient.shape[0], -1)
+    gradient_norm = gradient.norm(2, dim=1)
+    gradient_penalty = torch.mean((gradient_norm - 1) ** 2)
+    return gradient_penalty
+
 class AddGaussianNoise(object):
     def __init__(self, mean=0., std=1.):
         self.std = std
@@ -149,7 +170,7 @@ class Properties:
 # P = Properties()
 # print(P)
 
-dl = mnist_get_data(torch.device('cpu'), 10)
+# dl = mnist_get_data(torch.device('cpu'), 10)
 # print(len(dl), "\n", dl.batch_size)
 # for batch in dl:
 #     # print(batch.shape)
