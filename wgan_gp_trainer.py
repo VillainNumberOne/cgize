@@ -82,7 +82,7 @@ class DCGAN:
 
         # gp = gradient_penalty(self.D, batch, fake, self.P.device)
         gp = 0
-        D_loss = torch.mean(D_real) - torch.mean(D_fake)
+        D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
         # D_loss torch.mean(D_fake) - 
         
             
