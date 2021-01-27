@@ -82,7 +82,9 @@ class DCGAN:
 
         # gp = gradient_penalty(self.D, batch, fake, self.P.device)
         gp = 0
-        D_loss = -(torch.mean(D_real) - torch.mean(D_fake) + self.P.lambda_gp * gp)
+        D_loss = torch.mean(D_real) - torch.mean(D_fake)
+        # D_loss torch.mean(D_fake) - 
+        
             
         self.D_opt.zero_grad()
         D_loss.backward()
@@ -93,7 +95,7 @@ class DCGAN:
     def train_G(self):
         z = torch.randn(self.batch_size, self.P.z_size, 1, 1).to(self.P.device)
         output = self.D(self.G(z)).reshape(-1)
-        G_loss = -torch.mean(output)
+        G_loss = 1-torch.mean(output)
 
         self.G_opt.zero_grad()
         G_loss.backward()
