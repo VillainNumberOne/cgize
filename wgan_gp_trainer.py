@@ -16,7 +16,7 @@ from torchvision.utils import save_image
 from torchvision.datasets.utils import download_url
 
 from utils import *
-from dcgan_net import *
+from wgan_gp_net import *
 
 class Properties_DCGAN:
     def __init__(self):
@@ -80,10 +80,8 @@ class DCGAN:
         fake = self.G(z)
         D_fake = self.D(fake).reshape(-1)
 
-        # gp = gradient_penalty(self.D, batch, fake, self.P.device)
-        gp = 0
-        D_loss = -(torch.mean(D_real) - torch.mean(D_fake))
-        # D_loss torch.mean(D_fake) - 
+        gp = gradient_penalty(self.D, batch, fake, self.P.device)
+        D_loss = -(torch.mean(D_real) - torch.mean(D_fake) + self.P.lambda_gp*gp)
         
             
         self.D_opt.zero_grad()
@@ -95,7 +93,7 @@ class DCGAN:
     def train_G(self):
         z = torch.randn(self.batch_size, self.P.z_size, 1, 1).to(self.P.device)
         output = self.D(self.G(z)).reshape(-1)
-        G_loss = 1-torch.mean(output)
+        G_loss = -torch.mean(output)
 
         self.G_opt.zero_grad()
         G_loss.backward()
