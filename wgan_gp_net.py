@@ -30,7 +30,8 @@ class Discriminator(nn.Module):
         #middle section
         for i in range(p_min, p_max-1):
             self.layers.append(
-                Conv(ch_in * 2 ** (i-p_min), ch_in * 2 ** (i-p_min+1), kernel_size=4, stride=2, padding=1)
+                Conv(ch_in * 2 ** (i-p_min), ch_in * 2 ** (i-p_min+1), kernel_size=4, stride=2, padding=1),
+                Conv(ch_in * 2 ** (i-p_min+1), ch_in * 2 ** (i-p_min+1), kernel_size=3, stride=1, padding=1)
             )
 
         # last section
@@ -59,7 +60,8 @@ class Generator(nn.Module):
         #middle section
         for i in range(p_min, p_max-1):
             self.layers.append(
-                DeConv(ch_in // 2 ** (i-p_min), ch_in // 2 ** (i-p_min+1), kernel_size=4, stride=2, padding=1)
+                DeConv(ch_in // 2 ** (i-p_min), ch_in // 2 ** (i-p_min+1), kernel_size=4, stride=2, padding=1),
+                DeConv(ch_in // 2 ** (i-p_min+1), ch_in // 2 ** (i-p_min+1), kernel_size=3, stride=1, padding=1)
             )
 
         #last section
