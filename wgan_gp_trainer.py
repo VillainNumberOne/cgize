@@ -18,6 +18,10 @@ from torchvision.datasets.utils import download_url
 from utils import *
 from wgan_gp_net import *
 
+try: from IPython.display import clear_output
+except Exception: ipy = False
+else: ipy = True
+
 class Properties_DCGAN:
     def __init__(self):
         self.z_size = 128
@@ -145,17 +149,21 @@ class DCGAN:
 
 def main():
     P = Properties_DCGAN()
-    DL = mnist_get_data(P.device, 100)
+    P.p_max = 7
+    P.z_size = 64
+    DL = dem_get_data("../dataset/", 10, 100)
 
     dcgan = DCGAN(P, DL)
 
-    dcgan.G.load_state_dict(torch.load('data\generator_state_dict'))
-    dcgan.G.eval()
+    dcgan.fit(1)
 
-    dcgan.D.load_state_dict(torch.load('data\discriminator_state_dict'))
-    dcgan.D.eval()
+    # dcgan.G.load_state_dict(torch.load('data\generator_state_dict'))
+    # dcgan.G.eval()
 
-    dcgan.demo_1()
+    # dcgan.D.load_state_dict(torch.load('data\discriminator_state_dict'))
+    # dcgan.D.eval()
+
+    # dcgan.demo_1()
 
     # dcgan.fit(100)
 

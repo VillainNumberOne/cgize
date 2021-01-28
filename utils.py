@@ -97,6 +97,21 @@ def mnist_get_data(device, batch_size, N=1000):
 
     return data_loader
 
+def dem_get_data(path, batch_size, N=1000):
+    ds = torchvision.datasets.ImageFolder(root=path,
+    transform=Compose([
+        tt.Resize((128,128)), 
+        tt.Grayscale(),
+        tt.RandomHorizontalFlip(),
+        tt.RandomVerticalFlip(),
+        ToTensor(), 
+        Normalize(mean=(0.5,), std=(0.5,))
+    ]))
+
+    ds, _ = torch.utils.data.random_split(ds, [N, len(ds)-N])  
+
+    return DataLoader(ds, batch_size, shuffle=True, drop_last=True)
+
 
 class GProperties:
     def __init__(self):
