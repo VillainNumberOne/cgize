@@ -132,6 +132,16 @@ class DCGAN:
             images = denorm(images)
             save_image(images, os.path.join(directory, 'demo.png'), nrow=6)
 
+    def demo_1(self):
+        with torch.no_grad():
+            latent = torch.randn(1, self.P.z_size, 1, 1).to(self.P.device)
+            images = self.G(latent).clone().detach()
+            
+            directory = 'images'
+                
+            images = denorm(images)
+            save_image(images, os.path.join(directory, 'demo_1.png'), nrow=6)
+
 
 def main():
     P = Properties_DCGAN()
@@ -139,7 +149,15 @@ def main():
 
     dcgan = DCGAN(P, DL)
 
-    dcgan.fit(100)
+    dcgan.G.load_state_dict(torch.load('data\generator_state_dict'))
+    dcgan.G.eval()
+
+    dcgan.D.load_state_dict(torch.load('data\discriminator_state_dict'))
+    dcgan.D.eval()
+
+    dcgan.demo_1()
+
+    # dcgan.fit(100)
 
     
 
