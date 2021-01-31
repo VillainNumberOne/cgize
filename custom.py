@@ -7,54 +7,27 @@ import copy
 import torch.nn as nn
 import torch
 
-
-
-class ConvBlock(nn.Module):
-    def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=True):
-        super().__init__()
-        if Deconv:
-            self.layer = nn.ConvTranspose2d
-            self.relu = nn.LeakyReLU(lrelu)
-            nl = 'leaky_relu'
-        else:
-            self.layer = nn.Conv2d
-            self.relu = nn.ReLU()
-            nl = 'relu'
-            
-        self.activation = nn.Sequential(
-            self.relu,
-            nn.BatchNorm2d(o_c)
-        )
-
-        #weight initialization
-        self.layer = self.layer(i_c, o_c, kernel_size, stride=stride, padding=padding, bias=bias)
-        nn.init.kaiming_normal_(self.layer.weight, nonlinearity=nl)
-        
-        
+class Conv(nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size, stride, padding):
+        super(Conv, self).__init__()
         self.Sequential = nn.Sequential(
-            self.layer,
-            self.activation
+            nn.Conv2d(ch_in, ch_out, kernel_size, stride, padding, bias=False),
+            nn.InstanceNorm2d(ch_out, affine=True),
+            nn.LeakyReLU(0.2)
         )
-        
-        
+
     def forward(self, x_b):
         return self.Sequential(x_b)
-    
-class ConvLayer(nn.Module):
-    def __init__(self, i_c, o_c, kernel_size, stride=1, padding=0, Deconv=True, lrelu=0.2, bias=True, N=1):
-        super().__init__()
 
-        if Deconv:
-            self.name = 'deconv'
-        else:
-            self.name = 'conv'
+class Deconv(nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size, stride, padding):
+        super(Deconv, self).__init__()
+        self.Sequential = nn.Sequential(
+            nn.ConvTranspose2d(ch_in, ch_out, kernel_size, stride, padding, bias=False),
+            nn.BatchNorm2d(ch_out),
+            nn.ReLU()
+        )
 
-        self.Sequential = nn.Sequential(*[
-            ConvBlock(i_c, o_c, kernel_size, stride=stride, padding=padding, Deconv=Deconv, lrelu=lrelu, bias=bias) if i==0
-            else ConvBlock(o_c, o_c, kernel_size=(3,3), padding=1, Deconv=Deconv, lrelu=lrelu, bias=bias)
-            for i in range(N)
-        ])
-        
     def forward(self, x_b):
         return self.Sequential(x_b)
 
@@ -81,6 +54,7 @@ class FromImage(nn.Module):
     def forward(self, x_b):
         return self.Sequential(x_b)
 
+#rewrite
 class Minibatch(nn.Module):
     def __init__(self):
         super().__init__()
