@@ -83,84 +83,56 @@ class Generator(nn.Module):
             nn.ConvTranspose2d(self.channels[new], 1, 1, 1, 0)
         )
 
+
 class Discriminator(nn.Module):
-    
     def __init__(self, p_min, p_max, ch_img, ch_in, ch_out, p_start=-1):
         super(Discriminator, self).__init__()
-        self.layers = []
+        if p_start == -1: self.p_start = p_min
+        else: self.p_start = p_start 
+        self.p_inicial = int(self.p_start)
 
-        #first section (output: n x ch_in x 16)
-        self.layers.extend([
-                nn.Conv2d(ch_img, ch_in, kernel_size=4, stride=2, padding=1),
-                nn.LeakyReLU(0.2),
-            ])
+        self.p_max = p_max
+        self.p_min = p_min
+        self.ch_in = ch_in
+        self.ch_out = ch_out
+        self.ch_img = ch_img
 
-        #middle section
-        for i in range(p_min, p_max-1):
-            self.layers.extend([
-                Conv(ch_in * 2 ** (i-p_min), ch_in * 2 ** (i-p_min+1), kernel_size=4, stride=2, padding=1),
-                Conv(ch_in * 2 ** (i-p_min+1), ch_in * 2 ** (i-p_min+1), kernel_size=3, stride=1, padding=1)
-            ])
+        self.channels = [
+            min(ch_out * 2 ** (i-self.p_min), ch_in) for i in range(p_min, p_max+1)
+        ]
 
         # last section
-        ch_out = ch_in * 2 ** (p_max-p_min-1)
-        self.layers.extend([
-            nn.Conv2d(ch_out, 1, kernel_size=4, stride=2, padding=0),
+        self.last_section = nn.ModuleList([
+            Minibatch(),
+            Conv(ch_in+1, ch_in, 3, 1, 1),
+            nn.Conv2d(ch_in, ch_in, 2**p_min, 1, 0),
+            nn.Flatten(),
+            nn.Linear(ch_in, ch_img)
         ])
 
-        self.Sequential = nn.Sequential(*self.layers)
-            
-    
+        #middle section
+        self.middle_section = nn.ModuleList([])
+        for i in range(self.p_max-self.p_start, self.p_max-2):
+            self.middle_section.append(nn.ModuleList([
+                Conv(self.channels[i], self.channels[i], 3, 1, 1),
+                Conv(self.channels[i], self.channels[i+1], 4, 2, 1)
+            ]))
+        self.middle_section.append(self.last_section)
+        self.middle_section = self.middle_section[::-1]
+
+
+        # first section 
+        self.first_section = nn.ModuleList([
+            nn.Conv2d(self.ch_img, self.channels[self.p_max-self.p_start], 1, 1, 0),
+            nn.LeakyReLU(0.2)
+        ])
+        
+        
     def forward(self, x_b):
-        return self.Sequential(x_b)
-
-# class Discriminator(nn.Module):
-#     def __init__(self, p_min, p_max, ch_img, ch_in, ch_out, p_start=-1):
-#         super(Discriminator, self).__init__()
-#         if p_start == -1: self.p_start = p_min
-#         else: self.p_start = p_start 
-#         self.p_inicial = int(self.p_start)
-
-#         self.p_max = p_max
-#         self.p_min = p_min
-#         self.ch_in = ch_in
-#         self.ch_out = ch_out
-#         self.ch_img = ch_img
-
-#         self.channels = [
-#             min(ch_out * 2 ** (i-self.p_min), ch_in) for i in range(p_min, p_max+1)
-#         ]
-
-#         # last section
-#         self.last_section = nn.ModuleList([
-#             Minibatch(),
-#             Conv(ch_in+1, ch_in, 3, 1, 1),
-#             Conv(ch_in, ch_in, 2**p_min, 1, 0),
-#             Conv(ch_in, ch_img, 1, 1, 0)
-#         ])
-
-#         #middle section
-#         self.middle_section = nn.ModuleList([])
-#         for i in range(self.p_max-self.p_start, self.p_max-2):
-#             self.middle_section.append(nn.ModuleList([
-#                 Conv(self.channels[i], self.channels[i], 3, 1, 1),
-#                 Conv(self.channels[i], self.channels[i+1], 4, 2, 1)
-#             ]))
-#         self.middle_section.append(self.last_section)
-#         self.middle_section = self.middle_section[::-1]
-
-
-#         # first section 
-#         self.first_section = nn.ModuleList([
-#             Conv(self.ch_img, self.channels[self.p_max-self.p_start], 1, 1, 0)
-#         ])
-        
-        
-    # def forward(self, x_b):
-    #     for module in self.first_section: x_b = module(x_b)
-    #     for module in reversed(self.middle_section): 
-    #         for element in module: x_b = element(x_b)
-    #     return x_b
+        for module in self.first_section: x_b = module(x_b)
+        for module in reversed(self.middle_section): 
+            for element in module: x_b = element(x_b)
+        return x_b
 
     def grow(self):
         pass

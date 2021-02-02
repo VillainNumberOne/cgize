@@ -149,8 +149,9 @@ class PGAN:
 def main():
     P = Properties_PGAN()
     P.p_max = 5
+    P.critic_N = 1
     P.z_size = 64
-    DL = mnist_get_data(P.device, 100, 1000)
+    DL = mnist_get_data(P.device, 2, 2)
 
     pgan = PGAN(P, DL)
 
