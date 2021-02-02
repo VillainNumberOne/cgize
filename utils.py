@@ -15,6 +15,11 @@ import torchvision.transforms as tt
 from torchvision.utils import save_image
 from torchvision.datasets.utils import download_url
 
+def initialize_weights(model):
+    for m in model.modules():
+        if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.BatchNorm2d)):
+            nn.init.normal_(m.weight.data, 0.0, 0.02)
+
 def progression(current, p_min, p_max, first=-1):
     if first == -1:
         first = 2 ** p_min
