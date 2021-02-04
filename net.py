@@ -138,12 +138,12 @@ class Discriminator(nn.Module):
 
 
 def main():
-    z_size = 128
+    z_size = 512
     p_min = 2
-    p_max = 5
+    p_max = 7
     p_start = 5
 
-    g_ch_in = 128
+    g_ch_in = 512
     d_ch_in = g_ch_in // 2 ** (p_max-p_min-1)
     
 

@@ -91,9 +91,13 @@ def main():
     d_ch_in = g_ch_in // 2 ** (p_max-p_min-1)
 
     G = Generator(p_min, p_max, z_size, 1, g_ch_in)
+    D = Discriminator(p_min, p_max, 1, d_ch_in)
 
-    print(f"Discriminator output: {Discriminator(p_min, p_max, 1, d_ch_in)(torch.randn(10, 1, 32, 32)).shape}")
+    print(f"Discriminator output: {D(torch.randn(10, 1, 32, 32)).shape}")
     print(f"Generator output: {G(torch.randn(10, z_size, 1, 1)).shape}")
+
+    print("Generatar trainable parameters: ", sum(p.numel() for p in G.parameters() if p.requires_grad))
+    print("Discriminator trainable parameters: ", sum(p.numel() for p in D.parameters() if p.requires_grad))
 
     z = torch.randn(100, 128, 1, 1)
     D_fake = G(z).reshape(-1)
