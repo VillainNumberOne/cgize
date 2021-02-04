@@ -9,12 +9,21 @@ import torch.nn.functional as F
 from custom import *
 from utils import *
 
+def last_section_G(ch_in, ch_out=1):
+    return nn.Sequential(
+        nn.ConvTranspose2d(ch_in, ch_out, kernel_size=1, stride=1, padding=0),
+        nn.Tanh()
+    )
+
+def layers_G(ch_in, ch_out):
+    return nn.Sequential(
+        Deconv(ch_in, ch_out, kernel_size=4, stride=2, padding=1),
+        Deconv(ch_out, ch_out, kernel_size=3, stride=1, padding=1)
+    )
+
 class Generator(nn.Module):
-    def __init__(self, p_min, p_max, z_size, ch_img, ch_in, ch_out, p_start=-1):
+    def __init__(self, p_min, p_max, z_size, ch_img, ch_in, ch_out, p_start):
         super(Generator, self).__init__()
-        if p_start == -1: self.p_start = p_min
-        else: self.p_start = p_start 
-        self.p_inicial = int(self.p_start)
 
         self.p_max = p_max
         self.p_min = p_min
@@ -22,149 +31,169 @@ class Generator(nn.Module):
         self.ch_out = ch_out
         self.ch_img = ch_img
 
-        self.channels = [
-            min(ch_out * 2 ** (i-self.p_min), ch_in) for i in reversed(range(p_min, p_max+1))
-        ]
+        self.p_start = p_start
+        self.p_current = int(p_start)
 
-        # first section
-        self.first_section = nn.Sequential(
-            Deconv(z_size, self.channels[0], 2**p_min, 1, 0),
-            Deconv(self.channels[0], self.channels[0], 3, 1, 1)
-        )
+        self.channels = [min(ch_out * 2 ** (i-self.p_min), ch_in) for i in reversed(range(p_min, p_max+1))]
 
-        # middle section
-        self.middle_section = nn.ModuleList([])
-        self.middle_section.append(self.first_section)
-        for i in range(self.p_min+1, self.p_start+1):
-            current = i - self.p_min
-            self.middle_section.append(nn.Sequential(
-                Deconv(self.channels[current-1], self.channels[current], 4, 2, 1),
-                Deconv(self.channels[current], self.channels[current], 3, 1, 1)
-            ))
+        self.model =                Generator_base(self.channels[:p_start-p_min+1])
+        self.old_last_section =     None
+        self.new_last_section =     last_section_G(self.channels[p_start-p_min])
+        self.old_layers =           None
+        self.new_layers =           None
 
-        # last section
-        self.last_section = nn.ModuleList([nn.Sequential(
-            nn.ConvTranspose2d(self.channels[self.p_start-self.p_min], self.ch_img, 1, 1, 0),
-            nn.Tanh()
-        )])
-
-
-    def forward(self, x_b, progress=0.5):
-        for index, module in enumerate(self.middle_section):
-            x_b = module(x_b)
-            if index == len(self.middle_section)-2 and self.p_start > self.p_inicial: 
-                x_b_prev = x_b.clone().detach() # may cause problems with gradient descent
-            
-        x_b = self.last_section[-1](x_b)
-
-        # fading new layers
-        if self.p_start > self.p_inicial: 
-            with torch.no_grad():
-                x_b_prev = self.last_section[-2](x_b_prev)
-                x_b_prev = nn.Upsample(2**self.p_start)(x_b_prev)
-
-            alpha = progress - int(progress)
-            x_b = x_b * alpha + x_b_prev * (1 - alpha)
-
-        return x_b
-        
+        self.model =                Generator_model(self.model, self.new_last_section)
 
     def grow(self):
-        # update middle section
-        old = self.p_start-self.p_min
-        new = old + 1
-        self.p_start += 1
-        self.middle_section.append(nn.ModuleList([
-                Deconv(self.channels[old], self.channels[new], 4, 2, 1),
-                Deconv(self.channels[new], self.channels[new], 3, 1, 1)
-            ]))
-        # update last section
-        self.last_section.append(
-            nn.ConvTranspose2d(self.channels[new], 1, 1, 1, 0)
+        assert self.p_current+1 <= self.p_max, f"current progress value ({self.p_current+1}) exceeds maximum ({self.p_max})"
+        self.p_current += 1
+
+        if self.new_layers: self.model = nn.Sequential(self.model, self.new_layers)
+            
+        self.new_layers =           layers_G(self.channels[self.p_current-self.p_min-1], self.channels[self.p_current-self.p_min])
+        self.old_last_section =     self.new_last_section
+        self.new_last_section =     last_section_G(self.channels[self.p_current-self.p_min])
+
+        self.model = Generator_model(
+            self.model, 
+            new_last_section = self.new_last_section, 
+            old_last_section = self.old_last_section, 
+            new_layers = self.new_layers
         )
 
+class Generator_model(nn.Module):
+    def __init__(self, base_model, new_last_section, new_layers=None, old_last_section=None):
+        super(Generator_model, self).__init__()
 
-class Discriminator(nn.Module):
-    def __init__(self, p_min, p_max, ch_img, ch_in, ch_out, p_start=-1):
-        super(Discriminator, self).__init__()
-        if p_start == -1: self.p_start = p_min
-        else: self.p_start = p_start 
-        self.p_inicial = int(self.p_start)
+        self.base_model = base_model
+        self.old_last_section = old_last_section
+        self.new_last_section = new_last_section
+        self.new_layers = new_layers
 
-        self.p_max = p_max
-        self.p_min = p_min
-        self.ch_in = ch_in
-        self.ch_out = ch_out
-        self.ch_img = ch_img
+    def forward(self, x_b, progress=None, drop_last_section=True):
+        if progress:
+            x_b = self.base_model(x_b)
+            with torch.no_grad():
+                x_b_old = self.old_last_section(x_b)
+                x_b_old = nn.Upsample(scale_factor=2)(x_b_old)
 
-        self.channels = [
-            min(ch_out * 2 ** (i-self.p_min), ch_in) for i in range(p_min, p_max+1)
-        ]
+            x_b = self.new_layers(x_b)
+            x_b = self.new_last_section(x_b)
+            
+            alpha = progress - int(progress)
+            x_b = x_b * alpha + x_b_old * (1 - alpha)
 
-        # last section
-        self.last_section = nn.Sequential(
-            Minibatch(),
-            Conv(ch_in+1, ch_in, 3, 1, 1),
-            nn.Conv2d(ch_in, ch_in, 2**p_min, 1, 0),
-            nn.Flatten(),
-            nn.Linear(ch_in, ch_img)
+        else: 
+            x_b = self.base_model(x_b)
+            if self.new_layers: x_b = self.new_layers(x_b)
+            if not drop_last_section: x_b = self.new_last_section(x_b)
+
+        return x_b
+
+
+class Generator_base(nn.Module):
+    def __init__(self, channels, p_min=2):   
+        super(Generator_base, self).__init__()
+        self.layers = []
+
+        #first section
+        self.layers.append(
+            Deconv(channels[0], channels[0], 2**p_min, 1, 0)
         )
 
         #middle section
-        self.middle_section = nn.ModuleList([])
-        for i in range(self.p_max-self.p_start, self.p_max-2):
-            self.middle_section.append(nn.Sequential(
-                Conv(self.channels[i], self.channels[i], 3, 1, 1),
-                Conv(self.channels[i], self.channels[i+1], 4, 2, 1)
-            ))
-        self.middle_section.append(self.last_section)
-        self.middle_section = self.middle_section[::-1]
+        for i in range(len(channels)-1):
+            self.layers.extend([
+                Deconv(channels[i], channels[i+1], kernel_size=4, stride=2, padding=1),
+                Deconv(channels[i+1], channels[i+1], kernel_size=3, stride=1, padding=1)
+            ])
 
+        self.Sequential = nn.Sequential(*self.layers)
 
-        # first section 
-        self.first_section = nn.ModuleList([nn.Sequential(
-            Conv(self.ch_img, self.channels[self.p_max-self.p_start], 1, 1, 0),
-        )])
-        
-        
     def forward(self, x_b):
-        for module in self.first_section: x_b = module(x_b)
-        for module in reversed(self.middle_section):
-            x_b = module(x_b)
-        return x_b
+        return self.Sequential(x_b)
 
-    def grow(self):
-        pass
+class Discriminator_base(nn.Module):
+    def __init__(self, channels, ch_img=1, p_min=2):
+        super(Discriminator_base, self).__init__()
+        self.layers = []
+
+        #middle section
+        for i in range(len(channels)-1):
+            self.layers.extend([
+                Conv(channels[i], channels[i], kernel_size=4, stride=2, padding=1),
+                Conv(channels[i], channels[i+1], kernel_size=3, stride=1, padding=1)
+            ])
+
+        # last section
+        self.layers.extend([
+            Conv(channels[-1], channels[-1], kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(channels[-1], channels[-1], kernel_size=2**p_min, stride=1, padding=0),
+            nn.Flatten(),
+            nn.Linear(channels[-1], ch_img)
+        ])
+
+        self.Sequential = nn.Sequential(*self.layers)
+            
+    
+    def forward(self, x_b):
+        return self.Sequential(x_b)
 
 
 def main():
-    z_size = 512
+    # 32 16 8 4
+    channels = [128, 64, 32]
+    z_size = channels[0]
+
+    z_size = 128
     p_min = 2
-    p_max = 7
+    p_max = 5
     p_start = 5
 
-    g_ch_in = 512
+    g_ch_in = 128
     d_ch_in = g_ch_in // 2 ** (p_max-p_min-1)
     
 
-    G = Generator(p_min, p_max, z_size, 1, g_ch_in, 16, p_start)
-    D = Discriminator(p_min, p_max, 1, g_ch_in, 16, p_start)
-    # print(D.first_section, D.middle_section[::-1])
-    print("Generatar trainable parameters: ", sum(p.numel() for p in G.parameters() if p.requires_grad))
-    print("Discriminator trainable parameters: ", sum(p.numel() for p in D.parameters() if p.requires_grad))
-    print(f"Generator output: {G(torch.randn(10, z_size, 1, 1)).shape}")
-    print(f"Discriminator output: {D(torch.randn(10, 1, 32, 32)).shape}")
-    # G.grow()
-    # print(f"Generator output: {G(torch.randn(10, z_size, 1, 1)).shape}")
-    # G.grow()
-    # print(f"Generator output: {G(torch.randn(10, z_size, 1, 1)).shape}")
 
-    # print(D.channels)
+    # torch.manual_seed(10)
+    # np.random.seed(0)
 
-    # z = torch.randn(100, 128, 1, 1)
-    # D_fake = G(z).reshape(-1)
-    # print(min(D_fake), max(D_fake))
-    # print(G.channels)
+    zg = torch.randn(10, z_size, 1, 1)
+    zd = torch.randn(10, 16, 2**p_start, 2**p_start)
+
+    D = Discriminator_base([16, 32, 64, 128])
+
+    print(f"Generator output: {D(zd).shape}")
+
+    score = []
+
+    # for i in range(20):
+    #     G = Generator(p_min, p_max, z_size, 1, g_ch_in, 16, p_start)
+    #     opt = torch.optim.Adam(G.model.parameters(), lr=2e-4, betas=(0,0.9))
+    #     # print(f"Generator output: {G.model(torch.randn(10, z_size, 1, 1), drop_last_section=False).shape}")
+    #     for _ in range(20):
+    #         loss = torch.mean(G.model(zg, drop_last_section=False))
+    #         # print(loss)
+    #         opt.zero_grad()
+    #         loss.backward()
+    #         opt.step()
+
+    #     G.grow()
+    #     # print(f"Generator output")
+
+    #     opt = torch.optim.Adam(G.model.parameters(), lr=2e-4, betas=(0,0.9))
+    #     for _ in range(30):
+    #         loss = torch.mean(G.model(zg, drop_last_section=False, progress=0.5))
+    #         # print(loss)
+    #         opt.zero_grad()
+    #         loss.backward()
+    #         opt.step()
+
+    #     score.append(loss.item())
+    #     print(i, loss.item())
+    
+    # print(np.mean(score))
+
     print("success")
 
 if __name__ == "__main__":
