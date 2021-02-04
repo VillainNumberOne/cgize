@@ -39,7 +39,6 @@ class Generator(nn.Module):
         self.model =                Generator_base(self.channels[:p_start-p_min+1])
         self.old_last_section =     None
         self.new_last_section =     last_section_G(self.channels[p_start-p_min])
-        self.old_layers =           None
         self.new_layers =           None
 
         self.model =                Generator_model(self.model, self.new_last_section)
@@ -120,9 +119,51 @@ def first_section_D(ch_in, ch_out):
 
 def layers_D(ch_in, ch_out):
     return nn.Sequential(
-        Deconv(ch_in, ch_in, kernel_size=3, stride=1, padding=1),
-        Deconv(ch_in, ch_out, kernel_size=4, stride=2, padding=1)
+        Conv(ch_in, ch_in, kernel_size=3, stride=1, padding=1),
+        Conv(ch_in, ch_out, kernel_size=4, stride=2, padding=1)
     )
+
+class Discriminator(nn.Module):
+    def __init__(self, p_min, p_max, ch_img, ch_in, ch_out, p_start):
+        super(Discriminator, self).__init__()
+
+        self.p_max = p_max
+        self.p_min = p_min
+        self.ch_in = ch_in
+        self.ch_out = ch_out
+        self.ch_img = ch_img
+
+        self.p_start = p_start
+        self.p_current = int(p_start)
+
+        self.channels = [min(ch_out * 2 ** (i-self.p_min), ch_in) for i in range(p_min, p_max+1)]
+
+        self.model =                Discriminator_base(self.channels[-p_start+p_min-1:])
+        self.old_first_section =    None
+        self.new_first_section =    first_section_D(ch_img, self.channels[-p_start+p_min-1])
+        self.new_layers =           None
+
+        self.model =                Discriminator_model(self.model, self.new_first_section)
+
+    def grow(self):
+        assert self.p_current+1 <= self.p_max, f"current progress value ({self.p_current+1}) exceeds maximum ({self.p_max})"
+        self.p_current += 1
+
+        if self.new_layers: self.model = nn.Sequential(self.new_layers, self.model)
+            
+        self.new_layers =            layers_D(self.channels[-self.p_start+self.p_min-2], self.channels[-self.p_start+self.p_min-1])
+        self.old_first_section =     self.new_first_section
+        self.new_first_section =     first_section_D(self.ch_img, self.channels[-self.p_start+self.p_min-2])
+
+        self.model = Discriminator_model(
+            self.model, 
+            new_first_section = self.new_first_section, 
+            old_first_section = self.old_first_section, 
+            new_layers = self.new_layers
+        )
+
+    # def __call__(self, x_b, progress=None, drop_first_section=True):
+    #     return self.model.forward()
 
 class Discriminator_model(nn.Module):
     def __init__(self, base_model, new_first_section, new_layers=None, old_first_section=None):
@@ -135,23 +176,24 @@ class Discriminator_model(nn.Module):
 
     def forward(self, x_b, progress=None, drop_first_section=True):
         if progress:
-            x_b = self.base_model(x_b)
             with torch.no_grad():
-                x_b_old = self.old_last_section(x_b)
-                x_b_old = nn.Upsample(scale_factor=2)(x_b_old)
+                x_b_old = nn.AvgPool2d(2)(x_b)
+                x_b_old = self.old_first_section(x_b_old)
 
+            x_b = self.new_first_section(x_b)
             x_b = self.new_layers(x_b)
-            x_b = self.new_last_section(x_b)
-            
+
             alpha = progress - int(progress)
             x_b = x_b * alpha + x_b_old * (1 - alpha)
 
+            x_b = self.base_model(x_b)
+
+
         else: 
-            if not drop_first_section: x_b = self.new_fisst_section(x_b)
+            if not drop_first_section: x_b = self.new_first_section(x_b)
             if self.new_layers: x_b = self.new_layers(x_b)
             x_b = self.base_model(x_b)
             
-
         return x_b
 
 
@@ -190,7 +232,7 @@ def main():
     z_size = 128
     p_min = 2
     p_max = 5
-    p_start = 5
+    p_start = 4
 
     g_ch_in = 128
     d_ch_in = g_ch_in // 2 ** (p_max-p_min-1)
@@ -203,10 +245,11 @@ def main():
     zg = torch.randn(10, z_size, 1, 1)
     zd = torch.randn(10, 16, 2**p_start, 2**p_start)
 
-    D = Discriminator_base([16, 32, 64, 128])
-    Dm = Discriminator_model(D, first_section_D(1, 16))
+    D = Discriminator(p_min, p_max, 1, g_ch_in, 16, p_start)
+    print(f"Discriminator output: {D.model(torch.randn(10, 1, 2**p_start, 2**p_start), drop_first_section=False).shape}")
+    D.grow()
 
-    print(f"Generator output: {Dm(zd).shape}")
+    print(f"Discriminator output: {D.model(torch.randn(10, 1, 2**p_max, 2**p_max), progress=0.5).shape}")
 
     score = []
 
