@@ -113,6 +113,48 @@ class Generator_base(nn.Module):
     def forward(self, x_b):
         return self.Sequential(x_b)
 
+def first_section_D(ch_in, ch_out):
+    return nn.Sequential(
+        Conv(ch_in, ch_out, 1, 1, 0),
+    )
+
+def layers_D(ch_in, ch_out):
+    return nn.Sequential(
+        Deconv(ch_in, ch_in, kernel_size=3, stride=1, padding=1),
+        Deconv(ch_in, ch_out, kernel_size=4, stride=2, padding=1)
+    )
+
+class Discriminator_model(nn.Module):
+    def __init__(self, base_model, new_first_section, new_layers=None, old_first_section=None):
+        super(Discriminator_model, self).__init__()
+
+        self.base_model = base_model
+        self.old_first_section = old_first_section
+        self.new_first_section = new_first_section
+        self.new_layers = new_layers
+
+    def forward(self, x_b, progress=None, drop_first_section=True):
+        if progress:
+            x_b = self.base_model(x_b)
+            with torch.no_grad():
+                x_b_old = self.old_last_section(x_b)
+                x_b_old = nn.Upsample(scale_factor=2)(x_b_old)
+
+            x_b = self.new_layers(x_b)
+            x_b = self.new_last_section(x_b)
+            
+            alpha = progress - int(progress)
+            x_b = x_b * alpha + x_b_old * (1 - alpha)
+
+        else: 
+            if not drop_first_section: x_b = self.new_fisst_section(x_b)
+            if self.new_layers: x_b = self.new_layers(x_b)
+            x_b = self.base_model(x_b)
+            
+
+        return x_b
+
+
 class Discriminator_base(nn.Module):
     def __init__(self, channels, ch_img=1, p_min=2):
         super(Discriminator_base, self).__init__()
@@ -121,8 +163,8 @@ class Discriminator_base(nn.Module):
         #middle section
         for i in range(len(channels)-1):
             self.layers.extend([
-                Conv(channels[i], channels[i], kernel_size=4, stride=2, padding=1),
-                Conv(channels[i], channels[i+1], kernel_size=3, stride=1, padding=1)
+                Conv(channels[i], channels[i], kernel_size=3, stride=1, padding=1),
+                Conv(channels[i], channels[i+1], kernel_size=4, stride=2, padding=1)
             ])
 
         # last section
@@ -162,8 +204,9 @@ def main():
     zd = torch.randn(10, 16, 2**p_start, 2**p_start)
 
     D = Discriminator_base([16, 32, 64, 128])
+    Dm = Discriminator_model(D, first_section_D(1, 16))
 
-    print(f"Generator output: {D(zd).shape}")
+    print(f"Generator output: {Dm(zd).shape}")
 
     score = []
 
