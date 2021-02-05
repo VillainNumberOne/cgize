@@ -53,7 +53,7 @@ def gradient_penalty(critic, real, fake, device="cpu"):
     interpolated_images = real * alpha + fake * (1 - alpha)
 
     # Calculate critic scores
-    mixed_scores = critic(interpolated_images)
+    mixed_scores = critic(interpolated_images, no_fs=False)
 
     # Take the gradient of the scores with respect to the images
     gradient = torch.autograd.grad(

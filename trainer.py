@@ -77,11 +77,11 @@ class PGAN:
         self.demo_z = torch.randn(6**2, self.P.z_size, 1, 1).to(self.P.device)
 
     def train_D(self, batch):
-        D_real = self.D(batch).reshape(-1)
+        D_real = self.D(batch, no_fs=False).reshape(-1)
 
         z = torch.randn(self.batch_size, self.P.z_size, 1, 1).to(self.P.device)
-        fake = self.G(z)
-        D_fake = self.D(fake).reshape(-1)
+        fake = self.G(z, no_ls=False)
+        D_fake = self.D(fake, no_fs=False).reshape(-1)
 
         gp = gradient_penalty(self.D, batch, fake, self.P.device)
         D_loss = -(torch.mean(D_real) - torch.mean(D_fake)) + self.P.lambda_gp * gp
@@ -95,7 +95,7 @@ class PGAN:
 
     def train_G(self):
         z = torch.randn(self.batch_size, self.P.z_size, 1, 1).to(self.P.device)
-        output = self.D(self.G(z)).reshape(-1)
+        output = self.D(self.G(z, no_ls=False), no_fs=False).reshape(-1)
         G_loss = -torch.mean(output)
 
         self.G_opt.zero_grad()
@@ -104,7 +104,7 @@ class PGAN:
 
         return G_loss
 
-    def fit(self, epochs):
+    def fit(self, epochs, demo=True):
         
         for epoch in range(epochs):
             for i, (images, _) in enumerate(self.DL):
@@ -122,12 +122,12 @@ class PGAN:
             Discriminator loss: {D_loss}
             Generator loss: {G_loss}""")
 
-            self.demo()
+            if demo: self.demo()
 
     def demo(self):
         with torch.no_grad():
             latent = self.demo_z
-            images = self.G(latent).clone().detach()
+            images = self.G(latent, no_ls=False).clone().detach()
             images = images.reshape(images.size(0), self.P.ch_img, 2**self.P.p_max, 2**self.P.p_max)
             
             directory = 'images'
@@ -138,7 +138,7 @@ class PGAN:
     def demo_1(self):
         with torch.no_grad():
             latent = torch.randn(1, self.P.z_size, 1, 1).to(self.P.device)
-            images = self.G(latent).clone().detach()
+            images = self.G(latent, no_ls=False).clone().detach()
             
             directory = 'images'
                 
@@ -148,16 +148,17 @@ class PGAN:
 
 def main():
     P = Properties_PGAN()
-    P.p_max = 7
+    P.p_max = 5
     P.p_start = 5
     P.critic_N = 1
-    P.z_size = 512
-    P.ch_in = 512
+    P.z_size = 128
+    P.ch_in = 128
+
     DL = mnist_get_data(P.device, 50, 1000)
 
     pgan = PGAN(P, DL)
 
-    pgan.fit(100)
+    pgan.fit(10)
     # print("success")
 
     # dcgan.G.load_state_dict(torch.load('data\generator_state_dict'))
