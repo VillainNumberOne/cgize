@@ -54,7 +54,6 @@ class FromImage(nn.Module):
     def forward(self, x_b):
         return self.Sequential(x_b)
 
-#rewrite
 class Minibatch(nn.Module):
     def __init__(self):
         super().__init__()

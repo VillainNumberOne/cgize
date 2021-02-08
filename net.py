@@ -119,6 +119,7 @@ def first_section_D(ch_in, ch_out):
     return nn.Sequential(
         nn.Conv2d(ch_in, ch_out, kernel_size=3, stride=1, padding=1),
         nn.LeakyReLU(0.2),
+        # Conv(ch_out, ch_out, 3, 1, 1)
         # nn.Conv2d(ch_in, ch_out, kernel_size=4, stride=2, padding=1),
         # nn.LeakyReLU(0.2),
         # Conv(ch_in, ch_out, 1, 1, 0),
@@ -195,7 +196,6 @@ class Discriminator_model(nn.Module):
             x_b = x_b * alpha + x_b_old * (1 - alpha)
 
             x_b = self.base_model(x_b)
-
 
         else: 
             if not no_fs: x_b = self.new_first_section(x_b)
@@ -297,12 +297,12 @@ def main():
     channels = [128, 64, 32]
     z_size = channels[0]
 
-    z_size = 128
+    z_size = 512
     p_min = 2
-    p_max = 5
-    p_start = 4
+    p_max = 10
+    p_start = 10
 
-    g_ch_in = 128
+    g_ch_in = 512
     d_ch_in = g_ch_in // 2 ** (p_max-p_min-1)
     
 
@@ -311,13 +311,17 @@ def main():
     # np.random.seed(0)
 
     zg = torch.randn(10, z_size, 1, 1)
-    zd = torch.randn(10, 16, 2**p_start, 2**p_start)
+    zd = torch.randn(10, 1, 2**p_start, 2**p_start)
 
     D = Discriminator(p_min, p_max, 1, g_ch_in, 16, p_start)
-    print(f"Discriminator output: {D.model(torch.randn(10, 1, 2**p_start, 2**p_start), no_fs=False).shape}")
-    D.grow()
-
-    print(f"Discriminator output: {D.model(torch.randn(10, 1, 2**p_max, 2**p_max), progress=0.5).shape}")
+    # print(f"Discriminator output: {D(zd, no_fs=False).shape}")
+    print("Discriminator trainable parameters: ", sum(p.numel() for p in D.parameters() if p.requires_grad))
+    
+    G = Generator(p_min, p_max, z_size, 1, g_ch_in, 16, p_start)
+    # print(f"Discriminator output: {D(zg, no_fs=False).shape}")
+    print("Generator trainable parameters: ", sum(p.numel() for p in G.parameters() if p.requires_grad))
+    
+    
 
     score = []
 
